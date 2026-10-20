@@ -1,249 +1,191 @@
-<div align="center">
-
 # Valmo-SAVE
 
-### Every RTO gets one last chance to become a sale
+**Team 52 Saints, IIT Kharagpur — Meesho DICE Challenge 3.0, Problem Statement: Reducing RTO**
 
-**Team 52 Saints · IIT Kharagpur · Meesho DICE Challenge 3.0 · Problem statement: _Reducing RTO_**
+## Live Prototypes
 
-<br/>
+| Prototype | Intended user | Link |
+|---|---|---|
+| LMDC Dashboard | Operations team at a Valmo last-mile delivery centre | [valmo-save-lmdc.vercel.app/rto](https://valmo-save-lmdc.vercel.app/rto) |
+| Meesho Quick | Customers | [meesho-quick-app.vercel.app](https://meesho-quick-app.vercel.app/) |
+| Performance Tracker | Meesho management | [meesho-save-hq.vercel.app](https://meesho-save-hq.vercel.app/?loc=r%3Ancr) |
 
-[![LMDC Dashboard](https://img.shields.io/badge/🏭%20LMDC%20Dashboard-Open%20live-9f2089?style=for-the-badge)](https://valmo-save-lmdc.vercel.app/rto)
-&nbsp;
-[![Meesho Quick](https://img.shields.io/badge/🛍️%20Meesho%20Quick-Open%20live-e8177d?style=for-the-badge)](https://meesho-quick-app.vercel.app/)
-&nbsp;
-[![Performance Tracker](https://img.shields.io/badge/📊%20Performance%20Tracker-Open%20live-570a57?style=for-the-badge)](https://meesho-save-hq.vercel.app/?loc=r%3Ancr)
-
-</div>
-
-| Live prototype | Who uses it | Link | Video |
-|---|---|---|---|
-| 🏭 **LMDC Dashboard** | The team at a Valmo delivery hub | [valmo-save-lmdc.vercel.app/rto](https://valmo-save-lmdc.vercel.app/rto) | [Walkthrough](Valmo-SAVE%20Prototype%20Walkthrough.mp4) |
-| 🛍️ **Meesho Quick** | Customers | [meesho-quick-app.vercel.app](https://meesho-quick-app.vercel.app/) | [44-sec walkthrough](Meesho_Quick_Walkthrough.mp4) |
-| 📊 **Performance Tracker** | Meesho managers | [meesho-save-hq.vercel.app](https://meesho-save-hq.vercel.app/?loc=r%3Ancr) | [42-sec walkthrough](Performance%20Tracker_Walkthrough.mp4) |
-
-> 💡 Open **Meesho Quick** on a phone, or in Chrome press <kbd>F12</kbd> and switch to phone view.
+Meesho Quick is designed for mobile screens and is best viewed on a phone or in a browser's mobile view. Video walkthroughs of all three prototypes are included in this repository.
 
 ---
 
-## In 30 seconds
+## Summary
 
-- 📦 **The problem.** A failed Meesho delivery (an **RTO**) travels all the way back to the seller. That costs about **₹170** per parcel (₹50 forward, already spent, plus ₹120 back) and earns nothing.
-- 💡 **Our idea.** The parcel has already reached the buyer's city. So instead of sending it back, we **hold it at the local delivery hub for up to 21 days** and **sell it to the next buyer within 70 km** who orders the same product.
-- 🧠 **The model.** For every RTO, a demand model predicts the chance of a nearby sale and **holds the parcel only when that is cheaper than returning it**.
-- 💰 **The result.** Each local resale saves **₹87**. We break even when just **27.5 of every 100** held units sell; our back-test resold **48%**.
-- 🛠️ **What we built.** A model on ~100k real orders, plus **three working prototypes**: one for the hub, one for the customer and one for Meesho's managers.
+When a Meesho order cannot be delivered, it is marked as RTO (return to origin) and sent back to the seller. By then, the forward delivery of about ₹50 has already been spent, and the return journey adds about ₹120 more, a loss of roughly ₹170 per parcel. Yet the parcel has already reached the buyer's region, and a few days later another customer nearby often orders the same product.
 
----
+Valmo-SAVE holds such a parcel at the destination last-mile delivery centre (LMDC) for up to 21 days and sells it to the next customer within 70 km who orders the same product. A predictive model decides, for every RTO, whether holding is cheaper than returning. Each local resale saves ₹87, and the programme breaks even when 27.5% of held units are resold. In back-testing on unseen data, 48% of held units were resold.
 
-## 1 · The problem
+We built the model on approximately 100,000 real e-commerce orders and developed three working prototypes: a dashboard for hub operations, a customer-facing shopping experience (Meesho Quick), and a monitoring dashboard for Meesho management.
 
-When an order can't be delivered (the buyer isn't home, refuses the parcel, or the address is wrong), it becomes an **RTO: return to origin**.
+## 1. The Problem
 
-| Today, for every RTO | Cost |
+An order becomes an RTO when the customer is unavailable, refuses the parcel, or the address cannot be located. The current cost of each RTO is as follows.
+
+| Cost component | Amount |
 |---|---|
-| Forward delivery (already spent) | ₹50 |
-| Return trip to the seller | ₹120 |
-| **Total lost** | **₹170** |
+| Forward delivery (already incurred) | ₹50 |
+| Reverse delivery to the seller | ₹120 |
+| Total cost per RTO | ₹170 |
 
-The seller's stock and cash stay locked for weeks. And often, a few days later, **someone a few kilometres from the same hub orders the very same product**.
+Beyond the logistics cost, the seller's inventory and working capital remain locked for several weeks. One seller we interviewed described a product that took seven days to reach the customer and a further seventeen days in the return cycle.
 
-> *"My product reached the customer in 7 days. Then it stayed in the return cycle for another 17 days."*
-> — Prakash Chand, seller, Shri Prakash Shoes, Varanasi
+## 2. Research and Validation
 
-## 2 · What we found
+Our recommendations are based on four sources of evidence.
 
-| Source | What we did | What it told us |
+| Source | Scope | Key finding |
 |---|---|---|
-| 🗣️ **Primary survey** | **146 responses**: 137 customers + 9 stakeholders (sellers, delivery partners, hub staff) | Refusal, not being available and address problems cause most failures; sellers suffer from locked stock and cash |
-| 🧑‍🏫 **Meesho mentor sessions** | Discussed RTO policy and hub operations | RTOs not back with the seller within **45 days** count as lost; hubs can **already re-pack and re-label**; vehicles **already run between hubs** |
-| 🧑‍💼 **Industry experts** | Logistics, fintech and fraud specialists | Route efficiency, RTO prediction and fraud signals are proven capabilities to build on |
-| 📊 **Data** | ~100k real orders from the public **Olist** e-commerce dataset (Brazil) | Demand for top products is **local and repeats**: 63% of top-product orders around São Paulo are within 25 km, and 77% within 50 km |
+| Primary survey | 146 responses: 137 customers and 9 stakeholders, including sellers, delivery partners and hub staff | Refusal, customer unavailability and address issues account for most failed deliveries. Sellers are affected by locked inventory and cash. |
+| Meesho mentor sessions | Discussions on RTO policy and hub operations | RTO shipments not returned to the seller within 45 days are treated as lost. Hubs already support repacking and relabelling, and vehicles already run between hubs. |
+| Industry experts | Specialists in logistics, fintech and fraud detection | Route optimisation, RTO prediction and fraud detection are established capabilities that a solution can build on. |
+| Data analysis | Approximately 100,000 orders from the public Olist e-commerce dataset (Brazil) | Demand for popular products is local and recurring: 63% of top-product orders around São Paulo fall within 25 km, and 77% within 50 km. |
 
-## 3 · Our approach: stop RTO at every stage, then save what still fails
+## 3. Overall Approach
 
-We looked at the whole order journey. The deck covers ideas for every stage:
+We examined the entire order journey and proposed interventions at each stage. Prevention measures help customers buy with confidence through virtual try-on, size guidance and authentic customer photographs. A commitment step confirms purchase intent before dispatch for high-risk orders. A rescue layer improves the handling of failed delivery attempts and introduces an Attempt Integrity Score that rewards genuine delivery attempts by riders.
 
-| Stage | Idea | In short |
-|---|---|---|
-| **Prevent** | Try-on, size guidance, real buyer photos | Help buyers choose right the first time |
-| **Commit** | Confirm intent before dispatch | A quick WhatsApp check before shipping risky orders |
-| **Rescue** | Smarter failed-delivery recovery + an **Attempt Integrity Score** for riders | Reward genuine delivery attempts and recover failed ones |
-| **Recover** ⭐ | **Valmo-SAVE** (our main solution) | When an order still becomes a final RTO, give it one more chance to sell |
+These measures reduce failures, but some failures will always occur. Valmo-SAVE addresses what remains: it begins only after an order has been marked as a final RTO. It is our principal solution and the focus of this repository.
 
-Some failures will always happen. **Valmo-SAVE starts where every other fix stops**, and it is the focus of this repository.
+## 4. How Valmo-SAVE Works
 
-## 4 · Valmo-SAVE: how it works
+Valmo-SAVE operates in three steps.
 
-```mermaid
-flowchart LR
-    A["📦 Delivery fails<br/>final RTO at the hub"] --> B{"🧠 Engine<br/>hold or return?"}
-    B -- "holding is cheaper" --> C["🗄️ Hold on the hub shelf<br/>up to 21 days"]
-    B -- "otherwise" --> R["↩️ Return to seller<br/>as today"]
-    C --> D["✅ Quality check<br/>list on Meesho Quick"]
-    D --> E["🛒 Nearby buyer orders<br/>within 70 km"]
-    E --> F["🚚 Delivered in 1–2 days<br/>₹120 return trip avoided"]
-    C -- "no buyer by day 21" --> R
-```
-
-Three steps:
-
-1. **Retain.** Keep the eligible parcel at the destination hub (LMDC) as temporary stock. The seller still owns it; the hub only looks after it.
-2. **Match.** Watch for a new order of the **same product, same seller, same size** from a buyer within 70 km.
-3. **Fulfil.** Re-label it and deliver it as a fresh sale, using vehicles that **already run between hubs every day**.
-
-> **Example.** A kurta fails delivery at Delhi South. Two days later, a buyer in Gurgaon Sector 22, **14 km away**, orders the same kurta. It arrives the next day: no ₹120 return trip, and a sale saved.
-
-**Guard-rails:** hubs never become warehouses (a 21-day limit and a stock cap per product), sellers opt in, and fragile or perishable products are excluded.
-
-## 5 · The model: hold only when the economics work
-
-For every RTO, the engine asks one question: **is holding this parcel cheaper than sending it back?**
-
-```mermaid
-flowchart TD
-    A["How often is this exact product<br/>ordered within 70 km of this hub?"] --> B["Chance of a nearby sale<br/>by each day of the hold"]
-    B --> C["Expected cost of holding<br/>vs ₹170 to return now"]
-    C -->|"cheaper"| D["HOLD<br/>up to 21 days, within the stock cap"]
-    C -->|"not cheaper"| E["RETURN<br/>next morning, as today"]
-```
-
-| Step | What the model does |
+| Step | Description |
 |---|---|
-| **1. Local demand** | Estimates daily demand (λ) for the product within 70 km, weighting recent weeks most. Products with few sales borrow their category's rate. |
-| **2. Chance of resale** | Demand is bursty, so it uses a **negative-binomial** model: `P(sold by day t) = 1 − (1 + λt/k)^(−k)` |
-| **3. Expected cost** | `E[cost](T) = ₹50 + ₹25 + ₹0.33 × days held + ₹120 × (1 − P(sold by T))` |
-| **4. Decision** | **Hold** if the cheapest hold of up to 21 days costs less than **₹170**; otherwise **return** |
-| **5. Stock cap** | The n-th unit of a product is held only if the chance of n nearby orders still pays |
-| **6. Hard stop** | Every parcel waits at most **min(21 days, its remaining 45-day room)** |
+| Retain | An eligible parcel is held at the destination LMDC as temporary inventory instead of being sent back. The seller retains ownership; the hub acts only as custodian. |
+| Match | The system looks for a new order of the same product, from the same seller and in the same variant, placed by a customer within 70 km. |
+| Fulfil | The parcel is relabelled and delivered to the new customer as a fresh sale, using vehicles that already travel between hubs every day. |
 
-### Where 70 km and 21 days come from
+If no matching order arrives within the holding period, the parcel is returned to the seller through the normal process.
 
-Both are the point of diminishing returns in our back-test, found three independent ways and rounded up:
+For example, suppose a kurta fails delivery at the Delhi South hub. Two days later, a customer in Gurgaon Sector 22, 14 km away, orders the same kurta. The held unit is delivered the next day, the ₹120 return journey is avoided, and the sale is recovered.
 
-| Method | Resale radius | Holding cap |
+Several safeguards keep the programme controlled. Each parcel is held for no more than 21 days. A stock cap limits how many units of one product a hub may hold. Participation is on a seller opt-in basis, and fragile or perishable categories are excluded from the initial pilot.
+
+## 5. The Predictive Model
+
+For every RTO, the model answers one question: is holding this parcel expected to cost less than returning it now?
+
+| Stage | Method |
+|---|---|
+| Local demand | The model estimates daily demand for the product within 70 km of the hub, giving more weight to recent weeks. Products with limited sales history borrow the demand rate of their category. |
+| Probability of resale | Because demand is irregular, the model uses a negative binomial distribution: `P(sold by day t) = 1 − (1 + λt / k)^(−k)`. |
+| Expected cost of holding | `E[C](T) = ₹50 + ₹25 + ₹0.33 × expected days held + ₹120 × (1 − P(sold by day T))` |
+| Decision | The parcel is held if the lowest expected cost over any holding period of up to 21 days is below ₹170. Otherwise it is returned. |
+| Stock cap | The n-th unit of a product is held only if the probability of n nearby orders still justifies the cost. |
+| Time limit | Every parcel is held for at most the lesser of 21 days and the time remaining under the 45-day rule. |
+
+### Basis for the 70 km radius and the 21-day limit
+
+Both limits were derived from back-testing. Each is the point at which additional distance or time adds little further value, measured three independent ways and rounded up.
+
+| Method | Resale radius | Holding period |
 |---|---|---|
 | All products, all regions | 65 km | 20.5 days |
-| Top-20 products | 70 km | 14.6 days |
-| São Paulo metro (densest market) | 45 km | 17.6 days |
-| **Final rule** | **70 km** | **21 days** |
+| Top 20 products | 70 km | 14.6 days |
+| São Paulo metropolitan area | 45 km | 17.6 days |
+| Adopted limit | 70 km | 21 days |
 
-- **70 km:** 89% of the value is already captured at 70 km. Beyond that, buyers are in other cities and freight jumps about 43%.
-- **21 days:** holding pays from **day 2**, there is a **50% chance of a sale by day 8**, and **70% by day 21**.
+At 70 km, 89% of the achievable value is already captured; beyond this distance, buyers tend to be in other cities and freight costs rise by about 43%. Within the 21-day window, holding becomes profitable from day 2, the chance of a sale reaches 50% by day 8, and 70% by day 21.
 
-### Back-test results (on months the model never saw)
+### Back-test results
 
-| Test set | RTOs | Result |
+The model was trained on earlier months and evaluated on months it had not seen.
+
+| Test set | RTOs evaluated | Result |
 |---|---|---|
-| Dense metros | 8,351 | **₹9.81 saved per RTO**; **48%** of held units resold |
+| Dense metropolitan areas | 8,351 | ₹9.81 saved per RTO; 48% of held units resold |
 | All of Brazil | 26,767 | ₹3.54 saved per RTO |
 
-The engine is also honest: for **64% of metro RTOs** it says a nearby buyer is unlikely, and returns them as usual.
+The model is also selective. For 64% of metropolitan RTOs it predicts that a nearby buyer is unlikely and recommends returning the parcel as usual.
 
-## 6 · The money
+## 6. Financial Impact
 
-| Per unit | Returned as today | Held and **resold** (SAVE) | Held, **not** resold |
+| Cost per unit | Returned today | Held and resold | Held but not resold |
 |---|---|---|---|
-| Forward delivery (already spent) | ₹50 | ₹50 | ₹50 |
-| Holding, QC and relisting (up to 21 days) | – | ₹33 | ₹33 |
-| Move between hubs (existing vehicles) | – | ₹0 | ₹0 |
-| Return trip | ₹120 | **₹0 (avoided)** | ₹120 |
-| **Total** | **₹170** | **₹83 → saves ₹87** | ₹203 (₹33 more) |
+| Forward delivery (already incurred) | ₹50 | ₹50 | ₹50 |
+| Holding, quality check and relisting | — | ₹33 | ₹33 |
+| Transfer between hubs (existing vehicles) | — | ₹0 | ₹0 |
+| Reverse delivery | ₹120 | Avoided | ₹120 |
+| Total | ₹170 | ₹83 | ₹203 |
 
-- ⚖️ **Break-even: 27.5% of held units must resell.** The back-test achieved 48%.
-- 🏙️ **Delhi NCR pilot:** 10,000 RTOs in 3 months, 70% eligible, 50% resold → about **₹1.89 lakh net saving**.
-- 🛡️ **Stress-tested:** even with ₹10 extra cost per move, break-even is still only 36%. A shorter hold makes break-even easier (22.5% at 3 days).
+Each successful resale saves ₹87 compared with the current process, while each unsold held unit costs ₹33 more. The programme therefore breaks even when 27.5% of held units are resold, compared with 48% achieved in the back-test.
 
-Full workings: [`FINANCIAL MODEL_VALMO SAVE_ROUND 2.xlsx`](FINANCIAL%20MODEL_VALMO%20SAVE_ROUND%202.xlsx)
+For an illustrative Delhi NCR pilot of 10,000 RTOs over three months, with 70% eligible for holding and 50% of those resold, the expected net saving is approximately ₹1.89 lakh. The result is robust to higher costs: even with an additional ₹10 per unit for transfers, the break-even resale rate rises only to 36%. Shorter holding periods lower the break-even rate further, to 22.5% at three days.
 
-## 7 · Meesho Quick: where saved stock gets sold
+The detailed calculations are available in the [financial model](FINANCIAL%20MODEL_VALMO%20SAVE_ROUND%202.xlsx).
 
-Held units are sold through **Meesho Quick**, a new section of the Meesho app: *"Same products. Near you. Get it in 1–2 days."*
+## 7. Meesho Quick
 
-- ⚡ **Faster delivery:** 1–2 days from a hub nearby, versus 5–7 days from the seller.
-- 💳 **More prepaid orders:** fast delivery nudges buyers to pay online, which cuts refusals at the door.
-- 🏷️ **Same product, same price:** no discounting, so the seller's brand and margins are protected.
-- 🌱 **A new growth vertical:** as local stock grows, Quick can become a dedicated fast-delivery section, much like the ₹9 store drives traffic.
+Held units are sold through Meesho Quick, a proposed section of the Meesho app that offers products already located near the customer, with delivery in one to two days. Because delivery is faster than the usual five to seven days, Meesho Quick encourages prepaid orders, which in turn reduces refusals at the door. Products are sold at the original listing price, so there is no discounting and no harm to the seller's brand or margins. As local inventory grows, Meesho Quick can develop into a dedicated fast-delivery section for everyday products.
 
-## 8 · Three working prototypes
+## 8. Prototypes
 
-One connected flow: **the hub decides → the customer buys → Meesho monitors.**
+The three prototypes represent one connected process: the hub decides what to hold, the customer buys it, and Meesho management monitors performance across all hubs.
 
-### 🏭 [LMDC Dashboard](https://valmo-save-lmdc.vercel.app/rto): for the hub team · [code](LMDC%20Dashboard)
+| Prototype | Description | Live link | Source code |
+|---|---|---|---|
+| LMDC Dashboard | Shows a hold or return decision for every failed delivery with the reasoning, the hold shelf with a 21-day countdown for each unit, and the dispatch of resold units to the next shuttle. | [Open](https://valmo-save-lmdc.vercel.app/rto) | [LMDC Dashboard](LMDC%20Dashboard) |
+| Meesho Quick | A customer shopping experience for products held nearby: home screen, product listing, product page, cart, checkout with cash on delivery or simulated online payment, and order tracking. An order reserves the exact unit, so it cannot be sold twice. A hub view allows staff to list units after a quality check and to process orders. | [Open](https://meesho-quick-app.vercel.app/) | [Meesho Quick App](Meesho%20Quick%20App) |
+| Performance Tracker | A monitoring dashboard for Meesho management. Users select any of 14 LMDCs, a city or the whole country, and a date range, and can view the RTO funnel, resale rate, delivery time, prepaid share, cost saved and inventory age, and act on operational alerts. | [Open](https://meesho-save-hq.vercel.app/?loc=r%3Ancr) | [Performance Tracker](Performance%20Tracker) |
 
-- A **Retain / Return** decision for every failed delivery, with the reason in plain words.
-- The hold shelf with a 21-day countdown, and dispatch of resold units to the next shuttle.
-- Today in numbers: 602 failed → 214 retained, 388 returned, about 103 expected resales.
+Each prototype folder contains its own README with screen descriptions and setup instructions.
 
-### 🛍️ [Meesho Quick](https://meesho-quick-app.vercel.app/): for the customer · [code](Meesho%20Quick%20App)
+## 9. Implementation Plan
 
-- Home banner → **Available near you** → product → checkout → live tracking, styled like the screens in our deck.
-- Placing an order **reserves the exact unit**, so it can never be sold twice.
-- A `/hub` page where the hub team retains a unit, quality-checks it and packs orders.
-- Cash on delivery or a clearly labelled **simulated** online payment.
+We propose a 90-day pilot in Delhi NCR before expanding to other cities.
 
-### 📊 [Performance Tracker](https://meesho-save-hq.vercel.app/?loc=r%3Ancr): for Meesho managers · [code](Performance%20Tracker)
-
-- **Select** any of 14 LMDCs, a city or All India, and any date range.
-- **Monitor** the funnel (RTO received → eligible → listed on Quick → sold), sell-through, delivery time, prepaid share and cost saved.
-- **Act** on alerts: ageing stock, low sell-through, QC problems, slow delivery.
-
-> Each prototype folder has its own README with screens, routes and setup.
-
-## 9 · Pilot plan: start with Delhi, then scale
-
-| Days | Phase | What happens |
+| Period | Phase | Activities |
 |---|---|---|
-| **0–30** | Set up | Pick 2–3 high-RTO hubs in Delhi NCR, align delivery partners, set up QC and tagging, deploy the dashboards |
-| **31–60** | Pilot | Decide hold or return for live RTOs, auto-list held units on Meesho Quick, and track sell-through, delivery time, prepaid share and cost saved |
-| **61–90** | Prove and prepare | Check results against targets, tune rules per product, and write the playbook for Mumbai, Bengaluru and Hyderabad |
+| Days 0–30 | Set up | Select two to three high-RTO hubs in Delhi NCR, align delivery partners, establish quality-check and tagging processes, and deploy the dashboards. |
+| Days 31–60 | Pilot | Apply hold or return decisions to live RTOs, list held units on Meesho Quick, and track resale rate, delivery time, prepaid share and cost saved. |
+| Days 61–90 | Validate and prepare to scale | Evaluate results against targets, refine rules by product, and prepare a rollout plan for Mumbai, Bengaluru and Hyderabad. |
 
-**Everyone wins:** the seller sells sooner at full price, the buyer gets it in 1–2 days, the hub avoids return trips, and Meesho saves money and gains a fast-delivery vertical.
+The programme benefits every stakeholder. Sellers recover their sales sooner without lowering prices, customers receive products within one to two days, hubs handle fewer return shipments, and Meesho reduces logistics costs while gaining a new fast-delivery offering.
 
-## 10 · What's in this repository
+## 10. Repository Contents
 
-| File / folder | What it is |
+| File or folder | Description |
 |---|---|
-| 📓 [`Prediction_Model.ipynb`](Prediction_Model.ipynb) | The full pipeline: merging the 9 Olist tables, local demand maps, the hold / return engine, the back-test, and the radius and holding-time analysis |
-| 🗂️ [`Olist (Brazillian ECom Marketplace)_DataSets/`](Olist%20%28Brazillian%20ECom%20Marketplace%29_DataSets) | The public dataset (~100k orders, 9 tables) used as a stand-in for Meesho data |
-| 📐 [`CALCULATIONS (RADIUS & DAYS)_VALMO SAVE_ROUND 2.xlsx`](CALCULATIONS%20%28RADIUS%20%26%20DAYS%29_VALMO%20SAVE_ROUND%202.xlsx) | Step-by-step workings for the 70 km radius and the 21-day cap |
-| 💰 [`FINANCIAL MODEL_VALMO SAVE_ROUND 2.xlsx`](FINANCIAL%20MODEL_VALMO%20SAVE_ROUND%202.xlsx) | Unit economics, break-even and sensitivity |
-| 🗣️ [`Survey Response Sheet Valmo.xlsx`](Survey%20Response%20Sheet%20Valmo.xlsx) | 146 survey responses (137 customers + 9 stakeholders) |
-| 🏭 [`LMDC Dashboard/`](LMDC%20Dashboard) | Source code: hub dashboard (React + Vite) |
-| 🛍️ [`Meesho Quick App/`](Meesho%20Quick%20App) | Source code: customer app (React + Vite) |
-| 📊 [`Performance Tracker/`](Performance%20Tracker) | Source code: dashboard for Meesho managers (React + Vite) |
-| 🎬 [`Valmo-SAVE Prototype Walkthrough.mp4`](Valmo-SAVE%20Prototype%20Walkthrough.mp4) | Walkthrough of the LMDC dashboard |
-| 🎬 [`Meesho_Quick_Walkthrough.mp4`](Meesho_Quick_Walkthrough.mp4) | Walkthrough of the Meesho Quick app |
-| 🎬 [`Performance Tracker_Walkthrough.mp4`](Performance%20Tracker_Walkthrough.mp4) | Walkthrough of the Performance Tracker |
+| [Prediction_Model.ipynb](Prediction_Model.ipynb) | The complete analysis: merging the nine Olist tables, local demand mapping, the hold or return model, back-testing, and the radius and holding-period analysis |
+| [Olist (Brazillian ECom Marketplace)_DataSets](Olist%20%28Brazillian%20ECom%20Marketplace%29_DataSets) | The public dataset of approximately 100,000 orders, used as a proxy for Meesho data |
+| [CALCULATIONS (RADIUS & DAYS)_VALMO SAVE_ROUND 2.xlsx](CALCULATIONS%20%28RADIUS%20%26%20DAYS%29_VALMO%20SAVE_ROUND%202.xlsx) | Detailed workings for the 70 km radius and the 21-day holding limit |
+| [FINANCIAL MODEL_VALMO SAVE_ROUND 2.xlsx](FINANCIAL%20MODEL_VALMO%20SAVE_ROUND%202.xlsx) | Unit economics, break-even analysis and sensitivity analysis |
+| [Survey Response Sheet Valmo.xlsx](Survey%20Response%20Sheet%20Valmo.xlsx) | 146 survey responses from customers and stakeholders |
+| [LMDC Dashboard](LMDC%20Dashboard) | Source code for the hub operations dashboard |
+| [Meesho Quick App](Meesho%20Quick%20App) | Source code for the customer application |
+| [Performance Tracker](Performance%20Tracker) | Source code for the management dashboard |
+| [Valmo-SAVE Prototype Walkthrough.mp4](Valmo-SAVE%20Prototype%20Walkthrough.mp4) | Video walkthrough of the LMDC Dashboard |
+| [Meesho_Quick_Walkthrough.mp4](Meesho_Quick_Walkthrough.mp4) | Video walkthrough of Meesho Quick |
+| [Performance Tracker_Walkthrough.mp4](Performance%20Tracker_Walkthrough.mp4) | Video walkthrough of the Performance Tracker |
 
-## 11 · Run it yourself
+## 11. Running the Project
 
-**The model.** Open `Prediction_Model.ipynb` in Jupyter or Google Colab, keep the Olist CSVs in their folder, and run all cells (Python 3 with pandas, NumPy, SciPy and scikit-learn).
+**Predictive model.** Open `Prediction_Model.ipynb` in Jupyter or Google Colab, keep the Olist CSV files in their folder, and run all cells. The notebook requires Python 3 with pandas, NumPy, SciPy and scikit-learn.
 
-**Any prototype.** You need Node.js 18 or later:
+**Prototypes.** Each prototype is a React application built with Vite and requires Node.js 18 or later. To run one locally:
 
 ```bash
-cd "Meesho Quick App"        # or "LMDC Dashboard" or "Performance Tracker"
+cd "Meesho Quick App"
 npm install
-npm run dev                  # open http://localhost:5173
+npm run dev
 ```
 
-**Deploy your own.** Import this repository into [Vercel](https://vercel.com/new) once per prototype and set **Root Directory** to that prototype's folder. No environment variables are needed.
+Replace the folder name with `LMDC Dashboard` or `Performance Tracker` as required, then open http://localhost:5173. To deploy a prototype, import this repository into Vercel and set the Root Directory to the relevant folder. No environment variables are required.
 
-## 12 · Assumptions and limitations
+## 12. Assumptions and Limitations
 
-- **Olist (Brazil) data stands in for Meesho**, so absolute savings will differ; the method carries over unchanged and would be re-run on Meesho's own orders for the pilot.
-- **Costs:** ₹50 forward and ₹120 reverse come from the case pack. Holding costs (₹30–33) are built from public storage, handling and wage benchmarks.
-- **Distances** are straight-line; road distances are typically 20–30% longer.
-- **Moving between hubs** within 70 km is assumed to ride existing vehicle runs at no extra cost (see the sensitivity figures above if it doesn't).
-- **The prototypes use simulated or illustrative data**, and payments are simulated. The 21-day hold is a pilot setting, to be tuned per product with real sell-through data.
+The Olist dataset from Brazil was used as a proxy because Meesho order data is not publicly available. Absolute savings will therefore differ, although the method applies unchanged and would be re-run on Meesho data for the pilot.
+
+The forward and reverse delivery costs of ₹50 and ₹120 are taken from the case material provided. The holding cost of ₹30–33 per unit is estimated from public benchmarks for storage, handling and wages. Distances are measured in a straight line; road distances are typically 20–30% longer. Transfers between hubs within 70 km are assumed to use existing vehicle runs at no additional cost, and the sensitivity analysis above shows the effect if this does not hold.
+
+The prototypes use simulated or illustrative data, and all payments are simulated. The 21-day holding period is a pilot parameter, to be refined by product category using actual sales data.
 
 ---
 
-<div align="center">
-
-**Team 52 Saints** · Priyanshu Raj · Bhawesh Kukreja · Dhruv Anil Rai
-
-IIT Kharagpur · Meesho DICE Challenge 3.0
-
-</div>
+Team 52 Saints: Priyanshu Raj, Bhawesh Kukreja and Dhruv Anil Rai, IIT Kharagpur. Submitted for Meesho DICE Challenge 3.0.
