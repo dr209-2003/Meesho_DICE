@@ -1,100 +1,101 @@
-# Valmo-SAVE
+# LMDC Dashboard · Valmo-SAVE
 
-**Turning a final RTO into a local sale instead of a return trip**
+**The daily screen for the team at a Valmo last-mile delivery centre (LMDC): which failed deliveries to hold for local resale, and which to send back.**
 
-Team 52 Saints · IIT Kharagpur · Meesho DICE Challenge 3.0 (Round 2) · Problem statement: *Reducing RTO*
+[![Live demo](https://img.shields.io/badge/Live%20demo-valmo--save--lmdc.vercel.app-9f2089?style=for-the-badge)](https://valmo-save-lmdc.vercel.app/rto)
+![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-6-646cff?style=flat-square&logo=vite&logoColor=white)
+![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000?style=flat-square&logo=vercel)
 
-**Live prototype:** [valmo-save-lmdc.vercel.app/rto](https://valmo-save-lmdc.vercel.app/rto)
+> Part of [Valmo-SAVE](../README.md) by Team 52 Saints, IIT Kharagpur, for Meesho DICE Challenge 3.0.
 
 ---
 
-## The problem
+## Who uses it
 
-When a Meesho order cannot be delivered, it becomes an RTO (return to origin). The parcel then travels all the way back to the seller. By that point the forward delivery (about ₹50) has already been spent, and the return adds roughly ₹120 more. That is **₹170 for every RTO** with nothing to show for it. Meanwhile, someone a few kilometres from the same hub often orders that same product a few days later.
+A shift lead at the hub (the demo is set at **LMDC-DL-07, Okhla, New Delhi**). Every failed delivery that reaches the hub gets one of two decisions from the Valmo-SAVE engine:
 
-## Our solution
+- **Retain**: keep it on the hold shelf and resell it to a buyer within 70 km.
+- **Return to origin (RTO)**: send it back to the seller, exactly as today.
 
-Valmo-SAVE stops sending the parcel back straight away. It **holds the RTO at the destination last-mile delivery centre (LMDC)** and **resells it to the next customer who orders the same product nearby**.
+## What the hub team can do
 
-The policy in one line:
-
-> Hold a final RTO at the LMDC for **at most 21 days** (and never past Meesho's 45-day lost-shipment rule). Resell it to a buyer of the same product **within 70 km of the hub**. If no buyer comes in time, return it to the seller as usual.
-
-For every RTO, a prediction model decides **Hold** or **Return**:
-
-1. **Local demand.** The model estimates how often the same product is ordered within 70 km of the hub, using recent order history. Demand is bursty, so it uses a negative-binomial model that is recalibrated monthly.
-2. **Chance of resale.** From that demand rate, it estimates the probability that a local buyer appears on each day of the hold.
-3. **Decision.** It holds the unit only if the expected cost of holding is lower than returning it now:
-   - expected cost of holding = holding cost + (chance of no buyer × return cost)
-   - cost of returning now = ₹170
-4. **Safety limits.** It caps the hold at min(21 days, days left before the 45-day rule). It also limits how many units of the same product one hub keeps.
-
-The 21-day and 70 km limits are not arbitrary. Each is the point of diminishing returns (the "elbow") found three independent ways, then rounded up so that every group sits at or past its own elbow:
-
-| Method | Resale radius | Holding cap |
+| Screen | Route | What it does |
 |---|---|---|
-| All products, all regions | 65 km | 20.5 days |
-| Top-20 products | 70 km | 14.6 days |
-| São Paulo metro (densest market) | 45 km | 17.6 days |
-| **Final cap** | **70 km** | **21 days** |
+| **Overview** | `/` | The shift at a glance: parcels received → delivered → failed, a 14-day trend, failure reasons, delivery zones, hold-shelf gauge, tasks and notifications |
+| **RTO & Retain** | `/rto` | Today's numbers (602 failed → 214 retained, 388 RTO), the policy rules, and a **Retain / Cap full / RTO decision for every product**, with the reason in plain words |
+| **SKU detail** | `/sku/:id` | One product's resale chance by day, the break-even line, where nearby buyers are, and a slider to test a shorter hold |
+| **LMSC dispatch** | `/dispatch` | Resold units moving to the next shuttle (pick → load → sent), with cut-off times |
+| **Hold shelf** | `/shelf` | Shelf capacity, the age of every unit, and units close to the 21-day limit |
+| **Meesho Quick ops** | `/quick-ops` | Retain a unit → pass a 3-point quality check → it goes live on Meesho Quick; then pack and dispatch the orders customers place |
 
-## Key numbers
+Every action updates the other screens (tasks, notifications, counters). **Reset demo** in the footer restores the starting state.
 
-| Metric | Value |
+## The rules behind every decision
+
+| Rule | Value |
 |---|---|
-| Cost of an RTO today | ₹170 (₹50 forward + ₹120 reverse) |
-| Cost to hold one product for up to 21 days | ₹30–33 |
-| Saving on every product resold locally | ₹87–90 |
-| Breakeven: held products that must resell | **25–28 out of 100** |
-| Extra network cost (LMDC ↔ LMSC transfer) | ₹0: existing vehicles already run back and forth |
-| Back-test on unseen months, dense metros (8,351 RTOs) | ₹9.81 saved per RTO; 48% of held units resold |
-| Back-test on unseen months, all of Brazil (26,767 RTOs) | ₹3.54 saved per RTO |
+| Resell only within | **70 km** of the hub |
+| Hold for at most | **21 days**, always inside Meesho's 45-day lost-shipment rule |
+| Cost of returning now | **₹170** (₹50 forward, already spent + ₹120 reverse) |
+| Cost of holding | ₹25 + ₹0.33 per day |
+| Hold only if | expected cost of holding < ₹170 |
+| Stock cap | the n-th unit of a product is held only if the chance of n local orders still pays |
 
-All results come from replaying real orders from the Olist Brazilian e-commerce dataset (2017–18) as a stand-in for Meesho data. Every delivered order is treated as if it were an RTO at its delivery date. The model is trained on earlier months and scored on months it never saw. For the Delhi NCR pilot, the same pipeline would be re-run on Meesho's own orders.
+The engine lives in [`src/lib/engine.js`](src/lib/engine.js):
 
-## Live prototype
-
-**[valmo-save-lmdc.vercel.app/rto](https://valmo-save-lmdc.vercel.app/rto)**
-
-This is the dashboard an LMDC operator would use. It shows:
-- incoming RTOs with the engine's Hold or Return decision
-- the hold shelf, with a countdown for each unit
-- resale dispatch to the LMSC
-- product-level demand and resale charts
-- daily tasks and alerts
-
-A screen-recorded walkthrough is included in this repository.
-
-## Repository contents
-
-| File / folder | What it is |
-|---|---|
-| [`Prediction_Model.ipynb`](Prediction_Model.ipynb) | Full pipeline: data preparation, demand model, Hold/Return engine, back-test and radius/holding-time analysis |
-| [`Olist (Brazillian ECom Marketplace)_DataSets/`](<Olist (Brazillian ECom Marketplace)_DataSets>) | Public Olist dataset used as the Meesho proxy |
-| [`CALCULATIONS (RADIUS & DAYS)_VALMO SAVE_ROUND 2.xlsx`](<CALCULATIONS (RADIUS & DAYS)_VALMO SAVE_ROUND 2.xlsx>) | Step-by-step workings for the 70 km radius and 21-day cap, with formulas and charts |
-| [`FINANCIAL MODEL_VALMO SAVE_ROUND 2.xlsx`](<FINANCIAL MODEL_VALMO SAVE_ROUND 2.xlsx>) | Holding-cost build-up and breakeven per 100 held products |
-| [`Survey Response Sheet Valmo.xlsx`](<Survey Response Sheet Valmo.xlsx>) | Primary survey responses collected by the team |
-| [`LMDC Website (Working Prototype)/`](<LMDC Website (Working Prototype)>) | Source code of the dashboard (React + Vite, deployed on Vercel) |
-| [`Valmo-SAVE Prototype Walkthrough.mp4`](<Valmo-SAVE Prototype Walkthrough.mp4>) | Video walkthrough of the prototype |
-
-## Running it locally
-
-**Notebook:** open `Prediction_Model.ipynb` in Jupyter or Google Colab, keep the Olist CSVs in the folder above, and run all cells (Python 3 with pandas, NumPy, SciPy and scikit-learn).
-
-**Prototype:**
-```bash
-cd "LMDC Website (Working Prototype)"
-npm install
-npm run dev
+```text
+P(sold by day t)  = 1 − (1 + λ·t / k)^(−k)               negative-binomial demand within 70 km
+E[cost](T)        = ₹50 + ₹25 + ₹0.33 · E[days held] + ₹120 · (1 − P(T))
+Decision          = HOLD if min over T ≤ 21 of E[cost](T) < ₹170, otherwise RTO
 ```
 
-## Assumptions and limitations
+## Run it locally
 
-- Olist (Brazil) data stands in for Meesho, so absolute savings will differ. The method carries over unchanged.
-- Costs: ₹50 forward and ₹120 reverse (from the case pack); holding cost of ₹30–33 is based on public storage, handling and wage benchmarks.
-- Distances are straight-line; road distances are typically 20–30% longer.
-- Moving a unit between hubs within 70 km is assumed to use existing LMDC ↔ LMSC vehicle runs at no extra cost.
+You need Node.js 18 or later.
+
+```bash
+cd "LMDC Dashboard"
+npm install
+npm run dev          # http://localhost:5173/rto
+```
+
+The dashboard uses simulated hub data for **Sun 04 Oct 2026, 13:45 IST** and saves its state in the browser. Charts are hand-built SVG; the only libraries are React and React Router.
+
+<details>
+<summary><b>Optional: the shared store behind <code>/quick-ops</code></b></summary>
+
+`/quick-ops` reads and writes stock and orders through a small Vercel function, [`api/state.js`](api/state.js), backed by Upstash Redis. To turn it on, connect **Upstash for Redis** to the Vercel project (it sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`; see [`.env.example`](.env.example)) and redeploy. Without it, the page runs in a clearly labelled demo mode that saves data in the browser.
+
+To test the function locally:
+
+```bash
+npm run build
+MEESHO_QUICK_MEMORY_STORE=1 node scripts/serve.mjs   # http://localhost:4173
+```
+
+This folder also contains an early version of the customer app at `/quick`. The final customer app is in [`Meesho Quick App`](../Meesho%20Quick%20App).
+</details>
+
+## Project structure
+
+```text
+src/
+├── main.jsx               routes
+├── lib/engine.js          Valmo-SAVE hold / return engine
+├── lib/units.js           units at the hub, buyers and journeys per product
+├── data/                  hub numbers, 10 products, shuttles, tasks, notifications
+├── state/AppState.jsx     shared state across screens + toasts
+├── components/            layout, charts (SVG), panels, UI pieces
+├── pages/                 Overview, RtoRetain, SkuDetail, Dispatch, Shelf, QuickOps
+└── shared/                stock and order rules used by /quick-ops
+api/state.js               optional shared store (Vercel function)
+```
+
+## Deploy your own
+
+Import this folder into [Vercel](https://vercel.com/new), set **Root Directory** to `LMDC Dashboard`, keep the Vite defaults, and deploy.
 
 ---
 
-*Team 52 Saints, IIT Kharagpur. Submission for Meesho DICE Challenge 3.0.*
+<sub>Simulated data for a prototype. Team 52 Saints · IIT Kharagpur · Meesho DICE Challenge 3.0</sub>
