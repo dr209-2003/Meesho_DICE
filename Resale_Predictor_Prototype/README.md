@@ -1,5 +1,7 @@
 # Valmo-SAVE Resale Predictor
 
+## https://valmo-save-predictor.vercel.app
+
 A one-page website that demonstrates the Valmo-SAVE model. Enter a returned product and the hub where its delivery
 failed; the model on the server predicts the chance that a buyer within 70 km orders it within the holding window,
 and decides **hold at the hub** or **return to the seller**.
