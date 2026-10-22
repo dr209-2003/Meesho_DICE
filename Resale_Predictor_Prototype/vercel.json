@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "api/{valmo_model.py,model_bundle.npz,model_bundle_meta.json}",
+      "maxDuration": 15
+    }
+  }
+}
