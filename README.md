@@ -9,7 +9,7 @@
 | LMDC Dashboard | Operations team at a Valmo last-mile delivery centre | [valmo-save-lmdc.vercel.app/rto](https://valmo-save-lmdc.vercel.app/rto) |
 | Meesho Quick | Customers | [meesho-quick-app.vercel.app](https://meesho-quick-app.vercel.app/) |
 | Performance Tracker | Meesho management | [meesho-save-hq.vercel.app](https://meesho-save-hq.vercel.app/?loc=r%3Ancr) |
-| Resale Predictor Prototype | Meesho management | [valmo-save-hq.vercel.app] https://valmo-save-predictor.vercel.app |
+| Resale Predictor Prototype | Meesho management | https://valmo-save-predictor.vercel.app |
 
 Meesho Quick is designed for mobile screens and is best viewed on a phone or in a browser's mobile view. Video walkthroughs of all three prototypes are included in this repository.
 
